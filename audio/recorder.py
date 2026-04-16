@@ -12,7 +12,7 @@ The returned bytes are ready to be wrapped in a WAV file for the Whisper API.
 import collections
 import io
 import wave
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 import sounddevice as sd
@@ -32,48 +32,62 @@ _SILENCE_FRAMES_NEEDED = int(SILENCE_DURATION_SEC * 1000 / FRAME_DURATION_MS)
 _MAX_FRAMES = int(MAX_RECORDING_SEC * 1000 / FRAME_DURATION_MS)
 
 
-def _find_input_device() -> Optional[int]:
-    """Return the device index of the first available input device, or None."""
+def _resolve_input_device(device_idx: Optional[int]) -> Optional[tuple[int, int]]:
+    """Return (device_index, num_channels), auto-detecting if device_idx is None."""
     devices = sd.query_devices()
+    if device_idx is not None:
+        dev = devices[device_idx]
+        ch = dev["max_input_channels"]
+        log.info("Using audio input device %d: %s (%d ch)", device_idx, dev["name"], ch)
+        return device_idx, ch
     for idx, dev in enumerate(devices):
         if dev["max_input_channels"] > 0:
-            log.debug("Using audio input device %d: %s", idx, dev["name"])
-            return idx
+            ch = dev["max_input_channels"]
+            log.info("Using audio input device %d: %s (%d ch)", idx, dev["name"], ch)
+            return idx, ch
     return None
 
 
-def record_until_silence() -> Optional[bytes]:
+def record_until_silence(device_idx: Optional[int] = None) -> Optional[bytes]:
     """
     Capture audio from the microphone using VAD.
+
+    All input channels are captured and mixed down to mono so it does not
+    matter which physical input the mic is plugged into.
+
+    Args:
+        device_idx: sounddevice device index to use. None = auto-detect.
 
     Returns WAV-encoded bytes on success, or None if no speech was detected.
     """
     vad = webrtcvad.Vad(VAD_AGGRESSIVENESS)
-    device = _find_input_device()
+    result = _resolve_input_device(device_idx)
 
-    if device is None:
+    if result is None:
         log.error("No audio input device found.")
         return None
+
+    device, num_channels = result
 
     frames: list[np.ndarray] = []
     # Ring buffer tracks whether recent frames contained speech
     speech_ring: collections.deque[bool] = collections.deque(maxlen=_SILENCE_FRAMES_NEEDED)
     voiced_detected = False
 
-    log.debug("Listening... (max %ss, silence cutoff %ss)", MAX_RECORDING_SEC, SILENCE_DURATION_SEC)
+    log.info("Listening...")
 
     try:
         with sd.InputStream(
             device=device,
             samplerate=SAMPLE_RATE,
-            channels=1,
+            channels=num_channels,
             dtype="int16",
             blocksize=FRAME_SAMPLES,
         ) as stream:
             while len(frames) < _MAX_FRAMES:
                 raw, _ = stream.read(FRAME_SAMPLES)
-                # raw shape: (FRAME_SAMPLES, 1) -- flatten to 1-D
-                frame_1d: np.ndarray = raw[:, 0]
+                # raw shape: (FRAME_SAMPLES, num_channels) -- mix down to mono
+                frame_1d: np.ndarray = raw.mean(axis=1).astype(np.int16)
                 frame_bytes = frame_1d.tobytes()
 
                 # webrtcvad requires exactly FRAME_BYTES bytes
@@ -101,10 +115,9 @@ def record_until_silence() -> Optional[bytes]:
         return None
 
     if not voiced_detected:
-        log.debug("No speech detected in this cycle.")
         return None
 
-    log.debug("Recorded %d frames (%.1f s).", len(frames), len(frames) * FRAME_DURATION_MS / 1000)
+    log.info("Speech captured (%.1f s) -- transcribing...", len(frames) * FRAME_DURATION_MS / 1000)
     pcm = np.concatenate(frames).astype(np.int16).tobytes()
     return _wrap_wav(pcm)
 
