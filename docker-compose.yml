@@ -1,0 +1,21 @@
+# Production -- Raspberry Pi 4
+# Audio is passed through via ALSA (/dev/snd device passthrough).
+# Run with: docker compose up -d
+
+services:
+  skeleton:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    # ALSA audio passthrough
+    devices:
+      - /dev/snd:/dev/snd
+    privileged: true
+    environment:
+      # Force ALSA as the PortAudio backend
+      - AUDIODEV=default
+    volumes:
+      # Persist logs across container restarts
+      - ./logs:/app/logs
+      # Persist cached fallback audio
+      - ./fallback:/app/fallback
