@@ -1,7 +1,3 @@
-# Production -- Raspberry Pi 4
-# Audio is passed through via ALSA (/dev/snd device passthrough).
-# Run with: docker compose up -d
-
 services:
   skeleton:
     build: .

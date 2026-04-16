@@ -103,17 +103,17 @@ Audio is passed through to the container via ALSA (`/dev/snd`). Logs and fallbac
 
 All tuning lives in `config.py`:
 
-| Setting | Default | Description |
-|---|---|---|
-| `SILENCE_DURATION_SEC` | `1.0` | Seconds of silence before recording stops |
-| `MAX_RECORDING_SEC` | `10.0` | Hard recording cutoff |
-| `VAD_AGGRESSIVENESS` | `3` | 0-3, higher filters more background noise |
-| `IDLE_MIN_SEC` | `20.0` | Minimum silence before an invitation plays |
-| `IDLE_MAX_SEC` | `40.0` | Maximum silence before an invitation plays |
-| `VOICE_STABILITY` | `0.50` | Lower = more expressive voice |
-| `VOICE_SIMILARITY` | `0.70` | Higher = closer to the original voice |
-| `VOICE_STYLE` | `0.20` | Style exaggeration (0 = none, 1 = max) |
-| `VOICE_SPEED` | `1.00` | Speech speed (lower = slower) |
+| Setting                | Default | Description                                |
+|------------------------|-------- |--------------------------------------------|
+| `SILENCE_DURATION_SEC` | `1.0`   | Seconds of silence before recording stops  |
+| `MAX_RECORDING_SEC`    | `10.0`  | Hard recording cutoff                      |
+| `VAD_AGGRESSIVENESS`   | `3`     | 0-3, higher filters more background noise  |
+| `IDLE_MIN_SEC`         | `20.0`  | Minimum silence before an invitation plays |
+| `IDLE_MAX_SEC`         | `40.0`  | Maximum silence before an invitation plays |
+| `VOICE_STABILITY`      | `0.50`  | Lower = more expressive voice              |
+| `VOICE_SIMILARITY`     | `0.70`  | Higher = closer to the original voice      |
+| `VOICE_STYLE`          | `0.20`  | Style exaggeration (0 = none, 1 = max)     |
+| `VOICE_SPEED`          | `1.00`  | Speech speed (lower = slower)              |
 
 ---
 

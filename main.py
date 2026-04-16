@@ -1,17 +1,3 @@
-"""
-Talking Skeleton -- main loop.
-
-Flow per cycle:
-  1. Wait until the skeleton is not speaking (feedback guard).
-  2. Record audio via VAD until silence or timeout.
-  3. If no speech and the idle timer has expired, play a random invitation clip.
-  4. Transcribe with Whisper (Slovak).
-  5. Generate a response with GPT-4o (Slovak, 1-2 sentences).
-  6. Synthesise speech with ElevenLabs (eleven_multilingual_v2).
-  7. Play the audio; set speaking flag during playback.
-  8. Repeat.
-"""
-
 import random
 import threading
 import time
@@ -36,9 +22,6 @@ from utils.logger import get_logger
 
 log = get_logger()
 
-# Shared flag -- True while the skeleton's audio is playing.
-# The recorder checks this flag before starting to capture, preventing
-# the skeleton from hearing its own voice.
 _speaking = threading.Event()
 
 
